@@ -10,6 +10,8 @@ export async function initMiniApp(retryTimes = 1): Promise<unknown> {
 
 		if (userDetail?.user_profile) {
 			localStorage?.setItem('user', JSON.stringify(userDetail?.user_profile));
+			// Also store in mini-app-profile for consistency
+			localStorage?.setItem('mini-app-profile', JSON.stringify(userDetail));
 		}
 
 		// if (userDetail?.access_token) {
@@ -41,15 +43,38 @@ export async function initMiniApp(retryTimes = 1): Promise<unknown> {
 	}
 }
 
-export function getUserImage() {
-	const user = localStorage?.getItem('user.photo_url');
-	return user;
+export function getUserImage(): string | null {
+	if (typeof localStorage === 'undefined') return null;
+
+	const userStr = localStorage.getItem('user');
+	if (!userStr) {
+		console.log('getUserImage: No user data in localStorage');
+		return null;
+	}
+
+	try {
+		const user = JSON.parse(userStr);
+		const photoUrl = user?.photo_url;
+		if (photoUrl && typeof photoUrl === 'string' && photoUrl.trim() !== '') {
+			console.log('getUserImage: Found photo_url:', photoUrl);
+			return photoUrl;
+		}
+		console.log('getUserImage: No valid photo_url in user object:', user);
+		return null;
+	} catch (error) {
+		console.error('getUserImage: Error parsing user data:', error);
+		return null;
+	}
 }
 
 export const handleLogin = async (platform = 'google') => {
 	const miniapp = (window as any)?.miniapp;
 	if (!miniapp) return;
-	await miniapp.login(platform);
+	try {
+		await miniapp.login(platform);
+	} catch (err) {
+		throw err;
+	}
 };
 
 export const handleLogout = async () => {
@@ -57,5 +82,4 @@ export const handleLogout = async () => {
 	if (!miniapp) return;
 
 	await miniapp.logout();
-	
 };

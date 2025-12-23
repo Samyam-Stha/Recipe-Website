@@ -1,14 +1,16 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	import { categories, area } from '../../Store/Form.ts';
-	import { fetchRecipes } from '../../Store/MyRecipe.ts';
+	import { area } from '../../Store/Form.ts';
+	import { categories } from '../../Store/Recipe.ts';
+	import { openDB, savedRecipes, saveUserRecipe } from '../../Store/MyRecipe.ts';
 
 	import '../../app.css';
 	import postcss from 'postcss';
 	import { Trash2 } from '@lucide/svelte';
 	import { Camera } from '@lucide/svelte';
 	import axios from 'axios';
+	import { goto } from '$app/navigation';
 
 	onMount(async () => {
 		await openDB();
@@ -20,39 +22,6 @@
 		const areaData = await areaRes.data;
 		area.set(areaData.meals);
 	});
-
-	let db: IDBDatabase;
-
-	export async function openDB() {
-		return new Promise((resolve, reject) => {
-			const request = indexedDB.open('recipesDB', 1);
-
-			request.onupgradeneeded = () => {
-				const db = request.result;
-				if (!db.objectStoreNames.contains('recipes')) {
-					db.createObjectStore('recipes', { keyPath: 'idMeal' });
-				}
-			};
-
-			request.onsuccess = () => {
-				db = request.result;
-				resolve(db);
-			};
-
-			request.onerror = () => reject(request.error);
-		});
-	}
-
-	function saveRecipe(recipe: any) {
-		return new Promise((resolve, reject) => {
-			const tx = db.transaction('recipes', 'readwrite');
-			const store = tx.objectStore('recipes');
-			const request = store.add(recipe);
-
-			request.onsuccess = () => resolve(true);
-			request.onerror = () => reject(request.error);
-		});
-	}
 
 	let selectedImageBase64: string = '';
 
@@ -84,7 +53,7 @@
 			ingredients: [...ingredients]
 		};
 
-		await saveRecipe(recipe);
+		await saveUserRecipe(recipe);
 
 		RecipeName = '';
 		selectedCategory = '';
@@ -96,6 +65,8 @@
 		selectedImageBase64 = '';
 
 		alert('Recipe saved in IndexedDB!');
+
+		goto('/user');
 	}
 
 	let selectedCategory: string;
@@ -172,7 +143,8 @@
 		<div class="form-group flex flex-col w-full">
 			<label for="Image-upload">Recipe Image</label>
 			<button
-				class="file-upload-wrapper border-2 border-dotted border-gray-500 rounded-2xl flex flex-col justify-center items-center h-35 gap-2 pt-5 pb-5 cursor-pointer hover:bg-gray-50 hover:border-gray-600 transition-all"
+				type="button"
+				class="file-upload-wrapper border-2 border-dotted border-gray-500 rounded-2xl flex flex-col justify-center items-center min-h-[140px] gap-2 p-5 cursor-pointer hover:bg-gray-50 hover:border-gray-600 transition-all w-full max-w-full overflow-hidden"
 				onclick={() => document.getElementById('image-upload-input')?.click()}
 			>
 				<input
@@ -184,12 +156,10 @@
 					onchange={handleImageUpload}
 				/>
 				{#if selectedImageBase64}
-					<div class="w-48 h-48">
-						<img
-							src={selectedImageBase64}
-							alt="Preview"
-							class="rounded-lg w-full h-full object-cover"
-						/>
+					<div
+						class="w-full max-w-xs h-48 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center"
+					>
+						<img src={selectedImageBase64} alt="Preview" class="w-full h-full object-contain" />
 					</div>
 				{:else}
 					<Camera class="text-gray-500" size={32} />
@@ -243,66 +213,6 @@
 		<button class="w-full bg-blue-500 text-white h-12 rounded-xl cursor-pointer">Submit</button>
 	</form>
 </section>
-<h2>{RecipeName}</h2>
-<!-- <h2>{Area}</h2> -->
-<h2>{Instructions}</h2>
-<h2>{Tags}</h2>
-<h2>{Youtube}</h2>
-{#each ingredients as ingredient}
-	<h2>{ingredient.name}</h2>
-	<h2>{ingredient.measure}</h2>
-{/each}
-
-<!-- <style>
-	section {
-		width: 100%;
-		border: 1px solid black;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
-
-	form {
-		height: 100%;
-		border: 1px red solid;
-		margin-top: 50px;
-		display: flex;
-		flex-direction: column;
-		gap: 20px;
-		padding: 30px;
-	}
-	input {
-		width: 100%;
-		height: 50px;
-		padding: 10px;
-	}
-	textarea {
-		width: 100%;
-		height: 200px;
-	}
-
-	.img-box {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		border: 1px solid black;
-	}
-
-	.ingredients-measurement {
-		display: flex;
-		flex-direction: row;
-		gap: 20px;
-		margin-bottom: 10px;
-	}
-
-	button {
-		width: 100%;
-		height: 50px;
-	}
-	.Category {
-		height: 40px;
-	}
-</style> -->
 
 <style lang="postcss">
 	@reference "tailwindcss";
@@ -322,43 +232,4 @@
 	.select-box:focus {
 		@apply ring-2 ring-blue-400;
 	}
-
-	/* --- IMAGE UPLOAD (The "Dropzone") --- */
-	/* .file-upload-wrapper {
-		position: relative;
-		border: 2px dashed #d1d5db;
-		border-radius: 12px;
-		padding: 30px;
-		text-align: center;
-		cursor: pointer;
-		transition: background 0.2s;
-		background-color: #f9fafb;
-	}
-
-	.file-upload-wrapper:hover {
-		background-color: #f3f4f6;
-		border-color: #9ca3af;
-	}
-
-	.file-upload-wrapper input[type='file'] {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		top: 0;
-		left: 0;
-		opacity: 0;
-		cursor: pointer;
-	}
-
-	.upload-icon {
-		font-size: 32px;
-		color: #9ca3af;
-		margin-bottom: 10px;
-		display: block;
-	}
-
-	.upload-text {
-		color: #6b7280;
-		font-size: 14px;
-	} */
 </style>

@@ -2,25 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Bookmark } from '@lucide/svelte';
-
-	type Ingredient = {
-		name: string;
-		measure: string;
-	};
-
-	type Meal = {
-		idMeal: string;
-		strMeal: string;
-		strCategory: string;
-		strArea: string;
-		strInstructions: string;
-		strMealThumb: string;
-		strTags?: string;
-		strYoutube?: string;
-		ingredients: Ingredient[];
-		strSource?: string;
-		dateModified?: string;
-	};
+	import type { Meal } from '../../Store/Recipe.ts';
 
 	export let meal: Meal;
 	export let routePrefix: string = 'meal';

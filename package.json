@@ -45,6 +45,7 @@
 		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.1.17",
 		"@types/node": "^22",
+		"@vite-pwa/sveltekit": "^1.1.0",
 		"autoprefixer": "^10.4.22",
 		"bits-ui": "^2.14.4",
 		"clsx": "^2.1.1",

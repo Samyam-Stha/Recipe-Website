@@ -20,9 +20,16 @@ export interface Meal {
 	dateModified?: string;
 }
 
+export interface Category {
+	idCategory: string;
+	strCategory: string;
+	strCategoryThumb: string;
+	strCategoryDescription: string;
+}
+
 export const meals = writable<Meal[] | null>(null);
 
-function transformMeal(raw): Meal {
+function transformMeal(raw: Meal): Meal {
 	const ingredients: Ingredient[] = [];
 	for (let i = 1; i <= 20; i++) {
 		const name = raw[`strIngredient${i}`]?.trim();
@@ -53,7 +60,7 @@ export async function fetchMeals(search: string = '') {
 	const data = await res.data;
 
 	if (data.meals) {
-		const transformed = data.meals.map((meal) => transformMeal(meal));
+		const transformed = data.meals.map((meal: Meal) => transformMeal(meal));
 		meals.set(transformed);
 	} else {
 		meals.set([]);
@@ -70,9 +77,10 @@ export async function fetchMealById(id: string): Promise<Meal | null> {
 }
 export const selectedArea = writable('All');
 
+export const categories = writable<Category[]>([]);
 export const selectedCategory = writable('All');
 
-export async function fetchMealsByArea(area: unknown) {
+export async function fetchMealsByArea(area: string) {
 	if (area === 'All') {
 		return;
 	}
@@ -81,19 +89,33 @@ export async function fetchMealsByArea(area: unknown) {
 	const data = await res.data;
 
 	if (data.meals) {
-		meals.set(data.meals);
+		const fullDetailsPromises = data.meals.map((meal: Meal) => fetchMealById(meal.idMeal));
+		const fullMeals = await Promise.all(fullDetailsPromises);
+		meals.set(fullMeals.filter((m): m is Meal => m !== null));
+	} else {
+		meals.set([]);
+	}
+	console.log('Data: ', meals);
+}
+
+export async function fetchMealsByCategory(category: string) {
+	const res = await axios.get(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${category}`);
+	const data = await res.data;
+
+	if (data.meals) {
+		const fullDetailsPromises = data.meals.map((meal: Meal) => fetchMealById(meal.idMeal));
+		const fullMeals = await Promise.all(fullDetailsPromises);
+		meals.set(fullMeals.filter((m): m is Meal => m !== null));
 	} else {
 		meals.set([]);
 	}
 }
 
-export async function fetchMealsByCategory(category: unknown) {
-	const res = await axios.get(`https://www.themealdb.com/api/json/v1/1/filter.php?a=${category}`);
+export async function fetchCategories() {
+	const res = await axios.get('https://www.themealdb.com/api/json/v1/1/categories.php');
 	const data = await res.data;
 
 	if (data.categories) {
-		meals.set(data.categories);
-	} else {
-		meals.set([]);
+		categories.set(data.categories);
 	}
 }

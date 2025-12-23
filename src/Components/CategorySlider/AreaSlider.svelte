@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { area } from '../../Store/Form.ts';
-	import { selectedArea } from '../../Store/Recipe.ts';
 	import Badge from '$lib/components/ui/badge/badge.svelte';
+	import { selectedArea } from '../../Store/Recipe.ts';
 
-	function SelectArea(areaName: string) {
+	async function SelectArea(areaName: string) {
 		selectedArea.set(areaName);
 	}
 </script>
@@ -33,7 +33,27 @@
 </div>
 
 <style>
-	.categorySlider::-webkit-scrollbar {
-		display: none;
+	@media (min-width: 768px) {
+		.categorySlider::-webkit-scrollbar {
+			width: 8px;
+			height: 8px;
+		}
+		
+		.categorySlider::-webkit-scrollbar-track {
+			background: transparent;
+		}
+		
+		.categorySlider::-webkit-scrollbar-thumb {
+			background: transparent;
+			border-radius: 4px;
+		}
+		
+		.categorySlider:hover::-webkit-scrollbar-thumb {
+			background: #888;
+		}
+		
+		.categorySlider:hover::-webkit-scrollbar-thumb:hover {
+			background: #555;
+		}
 	}
 </style>

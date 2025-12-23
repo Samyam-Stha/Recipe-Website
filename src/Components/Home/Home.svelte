@@ -5,16 +5,17 @@
 		selectedArea,
 		fetchMealsByArea,
 		fetchMealsByCategory,
-		selectedCategory
+		selectedCategory,
+		categories
 	} from '../../Store/Recipe.ts';
-
-	import { categories, area } from '../../Store/Form.ts';
+	import { area } from '../../Store/Form.ts';
+	import { openDB } from '../../Store/MyRecipe.ts';
+	import { userImage, userName } from '../../Store/userDetails.ts';
 	import Card from '../Card/Card.svelte';
 	import { onMount } from 'svelte';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import { SlidersHorizontal } from '@lucide/svelte';
-	import CategorySlider from '../CategorySlider/CategorySlider.svelte';
-	import { openDB } from '../../Store/MyRecipe.ts';
+	import AreaSlider from '../CategorySlider/AreaSlider.svelte';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import Badge from '$lib/components/ui/badge/badge.svelte';
 	import { goto } from '$app/navigation';
@@ -22,7 +23,7 @@
 	import { handleLogout, initMiniApp } from '../../utils/miniappInitializer.ts';
 	import SkeletonCard from '../Skeletons/SkeletonCard.svelte';
 	import axios from 'axios';
-	// import { loggedIn } from '../../Store/auth.ts';
+	// import { loggedIn } from '../../Store/auth.store.ts';
 
 	let searched = '';
 	let val = '';
@@ -33,11 +34,9 @@
 
 	onMount(async () => {
 		await openDB();
-
 		const areaRes = await axios.get(`https://www.themealdb.com/api/json/v1/1/list.php?a=list`);
 		const areaData = await areaRes.data;
 		area.set(areaData.meals);
-
 		await fetchMeals('');
 
 		const categoryRes = await axios.get('https://www.themealdb.com/api/json/v1/1/categories.php');
@@ -52,8 +51,13 @@
 		// loggedIn.set(!!profile);
 	});
 
-	let loggedIn =
-		JSON.parse(localStorage.getItem('mini-app-profile') ?? '{}')?.user_profile ?? false;
+	let loggedIn = false;
+
+	onMount(() => {
+		const profile =
+			JSON.parse(localStorage.getItem('mini-app-profile') ?? '{}')?.user_profile ?? false;
+		loggedIn = !!profile;
+	});
 
 	// const handleLogout = async () => {
 	// 	try {
@@ -110,7 +114,7 @@
 	// };
 </script>
 
-<section class="p-10 h-dvh flex flex-col gap-5 overflow-visible">
+<section class="p-5 md:p-8 lg:px-16 xl:px-24 min-h-screen flex flex-col gap-5">
 	<div class="flex justify-between items-center">
 		<div>
 			<h1 class="font-bold text-4xl">Hello</h1>
@@ -121,8 +125,8 @@
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
 					<Avatar.Root class="w-15 h-15 ">
-						<Avatar.Image src="https://github.com/shadcn.png" alt="@shadcn" />
-						<Avatar.Fallback>CN</Avatar.Fallback>
+						<Avatar.Image src={$userImage || 'https://github.com/shadcn.png'} alt={$userName} />
+						<Avatar.Fallback>{$userName.slice(0, 2).toUpperCase()}</Avatar.Fallback>
 					</Avatar.Root>
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content>
@@ -192,23 +196,18 @@
 	</div>
 
 	<section>
-		<CategorySlider />
+		<AreaSlider />
 	</section>
 
 	<div class="overflow-visible w-full">
 		{#if loading}
-			<div class="flex w-full flex-wrap gap-x-2.5 gap-y-12 justify-left pb-20 pt-16 md:gap-20">
+			<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8 md:gap-12 lg:gap-16 w-full pb-20 pt-16">
 				{#each Array(10)}
 					<SkeletonCard />
 				{/each}
 			</div>
 		{:else if filteredMeals.length > 0}
-			<!-- <div
-				class="overflowbox flex gap-5 overflow-x-auto overflow-y-visible pt-16 w-full md:flex-wrap md:gap-20 md:justify-left md:pb-10"
-			> -->
-			<div class="flex w-full flex-wrap gap-12 justify-left pb-20 pt-16 md:gap-20">
-				<SkeletonCard />
-				<SkeletonCard />
+			<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8 md:gap-12 lg:gap-16 w-full pb-20 pt-16">
 				{#each filteredMeals as meal (meal.idMeal)}
 					<button onclick={areaReset}>
 						<Card {meal} routePrefix="meal" />

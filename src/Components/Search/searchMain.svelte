@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fetchMeals, meals, selectedCategory } from '../../Store/Recipe.ts';
-	import { categories } from '../../Store/Form.ts';
+	import { fetchMeals, meals, selectedCategory, categories, fetchCategories } from '../../Store/Recipe.ts';
 	import SearchCard from './searchCard.svelte';
 	import { SlidersHorizontal } from '@lucide/svelte';
 	import * as Drawer from '$lib/components/ui/drawer/index.js';
@@ -14,6 +13,7 @@
 
 	onMount(async () => {
 		await fetchMeals('');
+		await fetchCategories();
 		loading = false;
 	});
 
@@ -41,7 +41,7 @@
 			type="search"
 			placeholder="Search..."
 			bind:value={searched}
-			oninput={handleSearch}
+			on:input={handleSearch}
 			class="border rounded-xl p-2 w-full"
 		/>
 		<button class="bg-emerald-600 w-10 flex justify-center items-center rounded-xl p-2">
@@ -94,8 +94,6 @@
 			</div>
 		{:else if $meals && $meals.length > 0}
 			<div class="grid grid-cols-2 gap-5 w-full justify-around md:grid-cols-3">
-				<SkeletonSearch />
-				<SkeletonSearch />
 				{#each $meals as meal (meal.idMeal)}
 					<button class="w-full md:flex">
 						<SearchCard {meal} routePrefix="meal" />

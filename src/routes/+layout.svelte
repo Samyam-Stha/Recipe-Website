@@ -1,21 +1,51 @@
 <script lang="ts">
+	import '../app.css';
 	import './layout.css';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import '../app.css';
-	import { House, Bookmark, Bell, User, Plus } from '@lucide/svelte';
+	import { House, Bookmark, Bell, User, Plus, ChevronLeft } from '@lucide/svelte';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { onMount } from 'svelte';
 	import { initMiniApp, handleLogin, handleLogout } from '../utils/miniappInitializer.ts';
+	import { getUserDetail, userImage, userName } from '../Store/userDetails.ts';
 	import LoginPage from '../Components/Login/LoginPage.svelte';
-	// import { loggedIn } from '../Store/auth.ts';
+	import { pwaInfo } from 'virtual:pwa-info';
+	import { registerSW } from 'virtual:pwa-register';
+	import { loggedIn } from '../Store/auth.store.ts';
 
-	onMount(() => {
-		initMiniApp();
-		// const profile =
-		// 	JSON.parse(localStorage.getItem('mini-app-profile') ?? '{}')?.user_profile ?? false;
-		// loggedIn.set(!!profile);
+	let webManifestLink = $derived(pwaInfo ? pwaInfo.webManifest.linkTag : '');
+	let loggingIn = $state(false);
+	let logoutDialog: HTMLDialogElement;
+
+	onMount(async () => {
+		await initMiniApp();
+		const profile =
+			JSON.parse(localStorage.getItem('mini-app-profile') ?? '{}')?.user_profile ?? false;
+		loggedIn.set(!!profile);
+
+		// Refresh user details in store
+		await getUserDetail();
+
+		// Register service worker
+		if (pwaInfo) {
+			const updateSW = registerSW({
+				immediate: true,
+				onRegistered(r) {
+					console.log('Service Worker registered:', r);
+				},
+				onRegisterError(error) {
+					console.error('Service Worker registration error:', error);
+				},
+				onNeedRefresh() {
+					console.log('Service Worker needs refresh');
+				},
+				onOfflineReady() {
+					console.log('Service Worker ready for offline use');
+				}
+			});
+		}
 	});
 
 	const bottomNavs = [
@@ -26,24 +56,30 @@
 		{ name: 'Profile', icon: User, route: '/user' }
 	];
 
-	let loggedIn = $derived(
-		JSON.parse(localStorage.getItem('mini-app-profile') ?? '{}')?.user_profile ?? false
-	);
-
-	function handleLoginWrapper() {
-		handleLogin().then(() => {
+	async function handleLoginWrapper() {
+		loggingIn = true;
+		try {
+			await handleLogin();
 			loggedIn.set(true);
-		});
-		loggedIn = true;
+		} catch (err) {
+			console.log('login error');
+		} finally {
+			loggingIn = false;
+		}
 	}
 
 	$effect(() => {
-		console.log('is logged in', loggedIn);
+		console.log('is logged in', $loggedIn);
 	});
 
 	function handleLogoutWrapper() {
+		logoutDialog?.showModal();
+	}
+
+	function confirmLogout() {
+		logoutDialog?.close();
 		handleLogout().then(() => {
-			loggedIn = false;
+			loggedIn.set(false);
 			goto('/');
 			window.location.reload();
 		});
@@ -53,13 +89,14 @@
 	let currentTitle = $derived(bottomNavs.find((nav) => nav.route === currentRoute)?.name || '');
 </script>
 
-{#if !loggedIn}
-	<LoginPage {handleLoginWrapper} />
+{@html webManifestLink}
+{#if !$loggedIn}
+	<LoginPage {handleLoginWrapper} {loggingIn} />
 	<!-- <button onclick={() => handleLogin()}>Login</button> -->
 {:else}
 	<nav class="navbar flex md:hidden bg-white">
 		<ul
-			class="navlinks flex justify-between items-center px-10 py-5 fixed bottom-0 left-0 z-50 bg-white w-full border-t-2"
+			class="navlinks flex justify-between items-center px-10 py-5 fixed bottom-0 left-0 z-50 bg-white w-full border-t-gray-300 border-t-2"
 		>
 			{#each bottomNavs as nav}
 				{#if nav.name === 'Create Recipe'}
@@ -126,7 +163,17 @@
 			<li>
 				<button onclick={() => goto('/')} class="font-bold text-4xl cursor-pointer"> Recipe</button>
 			</li>
-
+			{#if currentRoute !== '/' && !currentRoute.startsWith('/meal') && !currentRoute.startsWith('/myrecipe')}
+				<div class="flex pl-20 max-sm:hidden justify-center items-center">
+					<p class="text-center flex-1 font-bold text-2xl">
+						{#if currentRoute.startsWith('/search')}
+							Search Recipe
+						{:else}
+							{currentTitle}
+						{/if}
+					</p>
+				</div>
+			{/if}
 			<!-- <li>
 			<button onclick={() => goto('/')}>
 				<Bookmark />
@@ -160,31 +207,35 @@
 							<DropdownMenu.Root>
 								<DropdownMenu.Trigger>
 									<Avatar.Root class="w-15 h-15 ">
-										<Avatar.Image src="https://github.com/shadcn.png" alt="@shadcn" />
-										<Avatar.Fallback>CN</Avatar.Fallback>
+										<Avatar.Image src={$userImage} alt={$userName} />
+										<Avatar.Fallback>{$userName.slice(0, 2).toUpperCase()}</Avatar.Fallback>
 									</Avatar.Root></DropdownMenu.Trigger
 								>
 								<DropdownMenu.Content>
 									<DropdownMenu.Group>
 										<DropdownMenu.Label>My Account</DropdownMenu.Label>
 										<DropdownMenu.Separator />
-										<DropdownMenu.Item onclick={() => goto('/user')}>Profile</DropdownMenu.Item>
+										<DropdownMenu.Item onclick={() => goto('/user')} class="cursor-pointer"
+											>Profile</DropdownMenu.Item
+										>
 										<DropdownMenu.Item
 											onclick={() => {
 												goto('/notifications');
-											}}>Notification</DropdownMenu.Item
+											}}
+											class="cursor-pointer">Notification</DropdownMenu.Item
 										>
 										<DropdownMenu.Item
 											onclick={() => {
 												goto('/saved-recipe');
-											}}>Saved</DropdownMenu.Item
+											}}
+											class="cursor-pointer">Saved</DropdownMenu.Item
 										>
 										<DropdownMenu.Item
-											><button
-												onclick={() => handleLogoutWrapper}
-												class="text-black md:text-white hover:bg-red-500">Logout</button
-											></DropdownMenu.Item
+											onclick={handleLogoutWrapper}
+											class="cursor-pointer text-red-600 hover:text-red-700 focus:bg-red-200"
 										>
+											Logout
+										</DropdownMenu.Item>
 									</DropdownMenu.Group>
 								</DropdownMenu.Content>
 							</DropdownMenu.Root>
@@ -195,9 +246,9 @@
 		</ul>
 	</nav>
 
-	{#if currentRoute !== '/' && !currentRoute.startsWith('/meal')}
+	{#if currentRoute !== '/' && !currentRoute.startsWith('/meal') && !currentRoute.startsWith('/myrecipe')}
 		<div class="flex p-10 pb-0 md:hidden">
-			<button class="font-bold" onclick={() => history.back()}>&lt;-</button>
+			<button class="font-bold" onclick={() => history.back()}><ChevronLeft /></button>
 			<p class="text-center flex-1 font-bold text-2xl">
 				{#if currentRoute.startsWith('/search')}
 					Search Recipe
@@ -211,6 +262,29 @@
 	<div class="pb-24 md:pb-0">
 		<slot />
 	</div>
+
+	<dialog bind:this={logoutDialog} class="rounded-lg p-6 max-w-md">
+		<div class="flex flex-col gap-4">
+			<h2 class="text-xl font-bold">Are you sure you want to logout?</h2>
+			<p class="text-gray-600">
+				You will be logged out of your account and redirected to the login page.
+			</p>
+			<div class="flex gap-3 justify-end mt-4">
+				<button
+					onclick={() => logoutDialog?.close()}
+					class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100"
+				>
+					Cancel
+				</button>
+				<button
+					onclick={confirmLogout}
+					class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+				>
+					Logout
+				</button>
+			</div>
+		</div>
+	</dialog>
 {/if}
 
 <style>

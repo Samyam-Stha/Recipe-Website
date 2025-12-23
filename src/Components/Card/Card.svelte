@@ -2,6 +2,9 @@
 	import { goto } from '$app/navigation';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Bookmark } from '@lucide/svelte';
+	import { selectedArea } from '../../Store/Recipe.ts';
+	import { saveRecipe, removeSavedRecipe, isSavedRecipe, openDB } from '../../Store/MyRecipe.ts';
+	import { onMount } from 'svelte';
 
 	type Ingredient = {
 		name: string;
@@ -25,6 +28,34 @@
 	export let meal: Meal;
 	export let routePrefix: string = 'meal';
 
+	let isSaved = false;
+
+	onMount(async () => {
+		await openDB();
+		if (meal?.idMeal) {
+			isSaved = await isSavedRecipe(meal.idMeal);
+		}
+	});
+
+	async function toggleBookmark(event: MouseEvent) {
+		event.stopPropagation();
+		event.preventDefault();
+		
+		if (!meal?.idMeal) return;
+		
+		try {
+			if (isSaved) {
+				await removeSavedRecipe(meal.idMeal);
+				isSaved = false;
+			} else {
+				await saveRecipe(meal);
+				isSaved = true;
+			}
+		} catch (error) {
+			console.error('Error toggling bookmark:', error);
+		}
+	}
+
 	$: mealIngredients =
 		meal?.ingredients?.length > 0
 			? meal.ingredients.map((i) => i.name).join(', ')
@@ -36,12 +67,22 @@
 		goto(`/${sanitized}/${meal.idMeal}`);
 	}
 
-	$: slicedName = (() => {
+	$: slicedNameDesktop = (() => {
 		if (!meal?.strMeal) return '';
 
 		const words = meal.strMeal.split(' ');
 		return words.length > 3 ? words.slice(0, 2).join(' ') + '...' : meal.strMeal;
 	})();
+
+	$: slicedNameMobile = (() => {
+		if (!meal?.strMeal) return '';
+
+		const words = meal.strMeal.split(' ');
+		return words.length > 2 ? words.slice(0, 2).join(' ') + '...' : meal.strMeal;
+	})();
+
+	console.log(`Name: ${meal.strMeal}`);
+	console.log(`Display : ${meal.strCategory}`);
 </script>
 
 <!-- 
@@ -73,7 +114,7 @@
 </button> -->
 
 <button
-	class="relative w-[150px] mb-10 bg-gray-200 rounded-xl shadow-md p-4 flex flex-col cursor-pointer items-center flex-none md:w-[250px]"
+	class="relative w-full mb-10 bg-gray-200 rounded-xl shadow-md p-4 flex flex-col cursor-pointer items-center"
 	onclick={openDetails}
 >
 	<img
@@ -82,91 +123,29 @@
 		class=" absolute -top-12 w-[109px] h-[110px] rounded-full object-cover border-4 border-white shadow-lg z-20 md:w-[150px] md:h-[151px]"
 	/>
 
-	<h1 class="mt-16 text-center font-bold text-gray-800 text-lg md:mt-26">{slicedName}</h1>
+	<h1 class="mt-16 font-bold text-gray-800 text-lg hidden md:mt-26 md:block">
+		{slicedNameDesktop}
+	</h1>
+	<h1 class="mt-16 font-bold text-gray-800 text-lg md:mt-26 md:hidden">{slicedNameMobile}</h1>
 
 	<div class=" mt-2 w-full">
 		<h1 class="text-gray-400 text-left text-sm">Category</h1>
 		<div class="flex justify-between items-center">
 			<h1>{meal.strCategory}</h1>
-			<div class="mt-2 p-2 bg-gray-100 rounded-full hover:bg-gray-200">
-				<Bookmark color="rgb(16 185 129)" />
+			<div 
+				class="mt-2 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors cursor-pointer" 
+				onclick={toggleBookmark}
+				onkeydown={(e) => e.key === 'Enter' && toggleBookmark(e)}
+				role="button"
+				tabindex="0"
+				aria-label={isSaved ? 'Remove from saved recipes' : 'Save recipe'}
+			>
+				{#if isSaved}
+					<Bookmark color="rgb(16 185 129)" fill="rgb(16 185 129)" />
+				{:else}
+					<Bookmark color="rgb(16 185 129)" />
+				{/if}
 			</div>
 		</div>
 	</div>
 </button>
-
-<!-- <style>
-	* {
-		padding: 0;
-		margin: 0;
-		box-sizing: border-box;
-	}
-
-	.container {
-		border: none;
-		background-color: rgba(128, 128, 128, 0.206);
-		text-align: left;
-		border-radius: 15px;
-		cursor: pointer;
-		width: 100%;
-	}
-
-	.box {
-		display: flex;
-		gap: 20px;
-		padding: 20px;
-		height: 200px;
-		border-radius: 15px;
-		transition: 0.3s;
-	}
-
-	.container:hover {
-		box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
-		transform: scale(1.02);
-	}
-
-	.imgcontainer {
-		width: 40%;
-		height: 100%;
-		border-radius: 15px;
-	}
-
-	.imgbox {
-		width: 100%;
-		height: 100%;
-		border-radius: 15px;
-		object-fit: cover;
-	}
-
-	.content {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-		width: 100%;
-	}
-
-	.des {
-		display: flex;
-		justify-content: space-between;
-	}
-
-	.des p {
-		color: rgb(116, 106, 106);
-	}
-
-	@media (max-width: 480px) {
-		.box {
-			flex-direction: column;
-			height: auto;
-		}
-
-		.content {
-			order: -1;
-		}
-
-		.imgcontainer {
-			width: 100%;
-			padding: 10px;
-		}
-	}
-</style> -->

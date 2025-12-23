@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Card from '../Card/Card.svelte';
-	import { openDB, fetchRecipes } from '../../Store/MyRecipe.ts';
-	import { savedRecipes } from '../../Store/MyRecipe.ts';
+	import { openDB, fetchRecipes, savedRecipes } from '../../Store/MyRecipe.ts';
 	import MyRecipe from '../MyRecipe/MyRecipe.svelte';
 
 	onMount(async () => {
@@ -18,7 +17,7 @@
 			>My Recipe</button
 		>
 	</div>
-	<div class="md:grid md:grid-cols-2 w-full">
+	<div class=" w-full">
 		<MyRecipe />
 	</div>
 </section>

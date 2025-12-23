@@ -10,21 +10,23 @@ export interface Recipe {
 	strYoutube: string | null;
 }
 
-export interface Category {
-	idCategory: string;
-	strCategory: string;
-	strCategoryThumb: string;
-	strCategoryDescription: string;
-}
 
 export type Area = {
 	strArea: string;
 };
 
-export const categories = writable<Category[] | null>(null);
+
+import { browser } from '$app/environment';
 
 export const area = writable<Area[] | null>(null);
 
-const saved = JSON.parse(localStorage.getItem('meals') || '{"meals": []}');
+let saved = { meals: [] };
+if (browser) {
+	try {
+		saved = JSON.parse(localStorage.getItem('meals') || '{"meals": []}');
+	} catch (e) {
+		console.error('Error parsing meals from localStorage', e);
+	}
+}
 
 export const recipes = writable<Recipe[]>(saved.meals || []);

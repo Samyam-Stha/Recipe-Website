@@ -2,12 +2,13 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { fetchMealById, type Meal } from '../../../Store/Recipe.ts';
-	import { savedRecipes } from '../../../Store/MyRecipe.ts';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import { fly } from 'svelte/transition';
 	import { slide, fade } from 'svelte/transition';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import SkeletonRecipe from '../../../Components/Skeletons/SkeletonRecipe.svelte';
+	import { ChevronLeft } from '@lucide/svelte';
+	import { openDB, saveRecipe, removeSavedRecipe, isSavedRecipe } from '../../../Store/MyRecipe.ts';
 
 	const id = page.params?.id;
 
@@ -17,9 +18,14 @@
 	let steps: any[] = [];
 	let loading = false;
 	let totalIngredient = 0;
+	let isSaved = false;
 
-	onMount(() => {
+	onMount(async () => {
+		await openDB();
 		fetchRecipeDetail();
+		if (id) {
+			isSaved = await isSavedRecipe(id);
+		}
 	});
 
 	const fetchRecipeDetail = async () => {
@@ -55,6 +61,22 @@
 			following = true;
 		}
 	}
+
+	async function toggleSave() {
+		if (!mealData?.idMeal) return;
+		
+		try {
+			if (isSaved) {
+				await removeSavedRecipe(mealData.idMeal);
+				isSaved = false;
+			} else {
+				await saveRecipe(mealData);
+				isSaved = true;
+			}
+		} catch (error) {
+			console.error('Error toggling save:', error);
+		}
+	}
 </script>
 
 {#if loading}
@@ -63,7 +85,7 @@
 	<section class="detailbox p-8 flex flex-col gap-2 md:pb-0 md:pt-0 md:flex-row md:gap-8 md:h-fit">
 		<div class="md:flex md:flex-col md:flex-1">
 			<div class="flex justify-between mb-6 md:hidden">
-				<button class="font-bold md:hidden" onclick={() => history.back()}>&lt;-</button>
+				<button class="font-bold md:hidden" onclick={() => history.back()}><ChevronLeft /> </button>
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>...</DropdownMenu.Trigger>
 					<DropdownMenu.Content>
@@ -72,7 +94,9 @@
 							<DropdownMenu.Item>Share</DropdownMenu.Item>
 							<DropdownMenu.Item>Rate</DropdownMenu.Item>
 							<DropdownMenu.Item>Review</DropdownMenu.Item>
-							<DropdownMenu.Item>Save</DropdownMenu.Item>
+							<DropdownMenu.Item onclick={toggleSave} class="cursor-pointer">
+								{isSaved ? 'Unsave' : 'Save'}
+							</DropdownMenu.Item>
 						</DropdownMenu.Group>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
@@ -200,7 +224,7 @@
 							<div class="ingredients">
 								<div class="flex flex-col gap-5">
 									{#each items as item, index}
-										<div class="flex flex-row border-2 justify-between p-5 rounded-xl bg-gray-200">
+										<div class="flex flex-row justify-between p-5 rounded-xl bg-gray-200">
 											<h1 class="font-bold">{item}</h1>
 											<h1 class="text-gray-500">{measures[index]}</h1>
 										</div>
