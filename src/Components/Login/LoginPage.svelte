@@ -63,6 +63,9 @@
 
 			<button
 				disabled={loggingIn}
+				on:click={() => {
+					goto('/');
+				}}
 				type="submit"
 				class="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0C9B59] py-3 text-sm font-semibold text-white shadow-md hover:bg-[#0a7f48] transition-colors"
 			>

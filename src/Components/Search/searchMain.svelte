@@ -1,6 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fetchMeals, meals, selectedCategory, categories, fetchCategories } from '../../Store/Recipe.ts';
+	import {
+		fetchMeals,
+		meals,
+		selectedCategory,
+		categories,
+		fetchCategories
+	} from '../../Store/Recipe.ts';
 	import SearchCard from './searchCard.svelte';
 	import { SlidersHorizontal } from '@lucide/svelte';
 	import * as Drawer from '$lib/components/ui/drawer/index.js';

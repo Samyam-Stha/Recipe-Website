@@ -10,11 +10,9 @@ export function openDB() {
 
 		request.onupgradeneeded = () => {
 			const db = request.result;
-			// Object store for user-created recipes
 			if (!db.objectStoreNames.contains('recipes')) {
 				db.createObjectStore('recipes', { keyPath: 'idMeal' });
 			}
-			// Object store for saved/bookmarked recipes
 			if (!db.objectStoreNames.contains('savedRecipes')) {
 				db.createObjectStore('savedRecipes', { keyPath: 'idMeal' });
 			}

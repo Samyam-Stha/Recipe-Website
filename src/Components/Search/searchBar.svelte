@@ -12,7 +12,7 @@
 		clearTimeout(timer);
 		timer = setTimeout(() => {
 			val = v;
-		}, 350);
+		}, 0);
 	};
 </script>
 

@@ -40,9 +40,9 @@
 	async function toggleBookmark(event: MouseEvent) {
 		event.stopPropagation();
 		event.preventDefault();
-		
+
 		if (!meal?.idMeal) return;
-		
+
 		try {
 			if (isSaved) {
 				await removeSavedRecipe(meal.idMeal);
@@ -132,8 +132,8 @@
 		<h1 class="text-gray-400 text-left text-sm">Category</h1>
 		<div class="flex justify-between items-center">
 			<h1>{meal.strCategory}</h1>
-			<div 
-				class="mt-2 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors cursor-pointer" 
+			<div
+				class="mt-2 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors cursor-pointer"
 				onclick={toggleBookmark}
 				onkeydown={(e) => e.key === 'Enter' && toggleBookmark(e)}
 				role="button"

@@ -95,7 +95,7 @@ export async function fetchMealsByArea(area: string) {
 	} else {
 		meals.set([]);
 	}
-	console.log('Data: ', meals);
+		console.log('Data: ', meals);
 }
 
 export async function fetchMealsByCategory(category: string) {

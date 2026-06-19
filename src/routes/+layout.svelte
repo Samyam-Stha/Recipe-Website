@@ -25,10 +25,8 @@
 			JSON.parse(localStorage.getItem('mini-app-profile') ?? '{}')?.user_profile ?? false;
 		loggedIn.set(!!profile);
 
-		// Refresh user details in store
 		await getUserDetail();
 
-		// Register service worker
 		if (pwaInfo) {
 			const updateSW = registerSW({
 				immediate: true,

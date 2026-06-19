@@ -64,7 +64,7 @@
 
 	async function toggleSave() {
 		if (!mealData?.idMeal) return;
-		
+
 		try {
 			if (isSaved) {
 				await removeSavedRecipe(mealData.idMeal);
